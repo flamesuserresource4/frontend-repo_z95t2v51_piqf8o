@@ -95,10 +95,10 @@ function AuthPanel({ onLogin }) {
                   {mode === 'login' && 'Welcome back!'}
                   {mode === 'register' && 'Create your account'}
                 </h2>
-                <p className="text-sm text-gray-600">গেম কিনুন নগদ Send Money দিয়ে। অর্ডার করলে ২ ঘন্টার মধ্যে ইমেইলে পাবেন।</p>
+                <p className="text-sm text-gray-600">গেম কিনুন আপনার পছন্দের পেমেন্ট মেথডে। অর্ডার করলে ২ ঘন্টার মধ্যে ইমেইলে পাবেন।</p>
               </div>
               <ul className="text-sm text-gray-700 space-y-2">
-                <li>• শুধুমাত্র Nagad Send Money</li>
+                <li>• bKash / Nagad সমর্থিত (অ্যাডমিন যেভাবে সেট করবেন)</li>
                 <li>• Transaction ID আবশ্যক</li>
                 <li>• Delivery Email অবশ্যই ঠিক দিন</li>
               </ul>
@@ -153,6 +153,14 @@ function GameCard({ game, onSelect }) {
       {game.image_url && <img src={game.image_url} alt={game.title} className="h-44 w-full object-cover rounded-lg" />}
       <div className="mt-3 font-semibold line-clamp-1">{game.title}</div>
       <div className="text-sm text-gray-600 line-clamp-2">{game.description}</div>
+      <div className="mt-2 flex flex-wrap gap-1">
+        {(game.payment_methods||[]).map(m => (
+          <span key={m} className="text-[11px] px-2 py-0.5 rounded bg-gray-100 border">{m}</span>
+        ))}
+        {(game.payment_modes||[]).map(m => (
+          <span key={m} className="text-[11px] px-2 py-0.5 rounded bg-gray-50 border border-dashed">{m}</span>
+        ))}
+      </div>
       <div className="mt-3 flex items-center justify-between">
         <span className="font-bold">৳ {game.price}</span>
         <button onClick={() => onSelect(game)} className="px-3 py-1.5 text-sm bg-gray-900 hover:bg-gray-700 text-white rounded-lg">Buy</button>
@@ -198,8 +206,20 @@ function Checkout({ game, token, onBack }) {
   const [platform, setPlatform] = useState(game.platforms?.[0] || '')
   const [deliveryEmail, setDeliveryEmail] = useState('')
   const [trx, setTrx] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState((game.payment_methods && game.payment_methods[0]) || 'Nagad')
+  const [paymentMode, setPaymentMode] = useState((game.payment_modes && game.payment_modes[0]) || 'Send Money')
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState('')
+
+  useEffect(()=>{
+    // Ensure current selections are valid if game props change
+    if (game.payment_methods?.length && !game.payment_methods.includes(paymentMethod)) {
+      setPaymentMethod(game.payment_methods[0])
+    }
+    if (game.payment_modes?.length && !game.payment_modes.includes(paymentMode)) {
+      setPaymentMode(game.payment_modes[0])
+    }
+  }, [game])
 
   const placeOrder = async (e) => {
     e.preventDefault()
@@ -217,7 +237,9 @@ function Checkout({ game, token, onBack }) {
           platform,
           amount: game.price,
           transaction_id: trx,
-          delivery_email: deliveryEmail
+          delivery_email: deliveryEmail,
+          payment_method: paymentMethod,
+          payment_mode: paymentMode
         })
       })
       const data = await res.json()
@@ -230,6 +252,9 @@ function Checkout({ game, token, onBack }) {
     }
   }
 
+  const methodList = game.payment_methods?.length ? game.payment_methods : ['Nagad']
+  const modeList = game.payment_modes?.length ? game.payment_modes : ['Send Money']
+
   return (
     <div className="max-w-md mx-auto bg-white rounded-xl border shadow p-6">
       <button onClick={onBack} className="text-sm text-fuchsia-600 hover:underline">← Back</button>
@@ -241,16 +266,30 @@ function Checkout({ game, token, onBack }) {
             {game.platforms?.map(p => <option key={p}>{p}</option>)}
           </select>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm mb-1">Payment Method</label>
+            <select value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)} className="w-full border rounded-lg px-3 py-2.5">
+              {methodList.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm mb-1">Payment Mode</label>
+            <select value={paymentMode} onChange={e=>setPaymentMode(e.target.value)} className="w-full border rounded-lg px-3 py-2.5">
+              {modeList.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+        </div>
         <div>
           <label className="block text-sm mb-1">Delivery Email</label>
           <input type="email" value={deliveryEmail} onChange={e=>setDeliveryEmail(e.target.value)} className="w-full border rounded-lg px-3 py-2.5" required />
         </div>
         <div>
-          <label className="block text-sm mb-1">Nagad Transaction ID</label>
+          <label className="block text-sm mb-1">Transaction ID ({paymentMethod}{paymentMode ? ` • ${paymentMode}` : ''})</label>
           <input value={trx} onChange={e=>setTrx(e.target.value)} className="w-full border rounded-lg px-3 py-2.5" placeholder="Txn ID" required />
         </div>
         <div className="text-sm text-gray-700 bg-gray-50 border rounded-lg p-3">
-          পেমেন্ট: নগদ Send Money. Txn ID দিন। ২ ঘন্টার মধ্যে ইমেইলে গেম/কোড পাবেন।
+          পেমেন্ট: {paymentMethod} {paymentMode ? `(${paymentMode})` : ''}. Txn ID দিন। ২ ঘন্টার মধ্যে ইমেইলে গেম/কোড পাবেন।
         </div>
         <button disabled={loading} className="w-full bg-gray-900 hover:bg-gray-700 text-white rounded-lg px-4 py-2.5">
           {loading ? 'Placing…' : `Pay ৳${game.price} & Place Order`}
@@ -265,7 +304,17 @@ function AdminPanel({ token }) {
   const [tab, setTab] = useState('games')
   const [games, setGames] = useState([])
   const [editingId, setEditingId] = useState('')
-  const [form, setForm] = useState({ title: '', description: '', platforms: 'PC,Android', categories: 'Action', price: 0, image_url: '', is_active: true })
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    platforms: 'PC,Android',
+    categories: 'Action',
+    price: 0,
+    image_url: '',
+    is_active: true,
+    payment_methods: ['Nagad'],
+    payment_modes: ['Send Money']
+  })
   const [message, setMessage] = useState('')
   const [imgUploading, setImgUploading] = useState(false)
 
@@ -273,7 +322,6 @@ function AdminPanel({ token }) {
   const authOnly = { 'Authorization': `Bearer ${token}` }
 
   const loadGames = async () => {
-    // Admin list to include inactive too
     const res = await fetch(API_BASE + '/admin/games', { headers: authOnly })
     const data = await res.json()
     setGames(data)
@@ -299,12 +347,25 @@ function AdminPanel({ token }) {
 
   const resetForm = () => {
     setEditingId('')
-    setForm({ title: '', description: '', platforms: 'PC,Android', categories: 'Action', price: 0, image_url: '', is_active: true })
+    setForm({ title: '', description: '', platforms: 'PC,Android', categories: 'Action', price: 0, image_url: '', is_active: true, payment_methods: ['Nagad'], payment_modes: ['Send Money'] })
+  }
+
+  const toggleArrayValue = (key, value) => {
+    setForm(prev => {
+      const arr = new Set(prev[key] || [])
+      if (arr.has(value)) arr.delete(value); else arr.add(value)
+      return { ...prev, [key]: Array.from(arr) }
+    })
   }
 
   const submitGame = async (e) => {
     e.preventDefault()
     setMessage('')
+    const methods = (form.payment_methods || []).filter(Boolean)
+    const modes = (form.payment_modes || []).filter(Boolean)
+    if (methods.length === 0) { setMessage('Select at least one payment method'); return }
+    if (modes.length === 0) { setMessage('Select at least one payment mode'); return }
+
     const payload = {
       title: form.title,
       description: form.description,
@@ -313,6 +374,8 @@ function AdminPanel({ token }) {
       price: parseFloat(form.price),
       image_url: form.image_url,
       is_active: !!form.is_active,
+      payment_methods: methods,
+      payment_modes: modes,
     }
     const url = editingId ? `/admin/games/${editingId}` : '/admin/games'
     const method = editingId ? 'PUT' : 'POST'
@@ -334,6 +397,8 @@ function AdminPanel({ token }) {
       price: g.price || 0,
       image_url: g.image_url || '',
       is_active: g.is_active,
+      payment_methods: g.payment_methods && g.payment_methods.length ? g.payment_methods : ['Nagad'],
+      payment_modes: g.payment_modes && g.payment_modes.length ? g.payment_modes : ['Send Money'],
     })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -413,6 +478,27 @@ function AdminPanel({ token }) {
             </div>
             {form.image_url && <img src={form.image_url} alt="preview" className="h-28 w-full object-cover rounded-lg border" />}
 
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="border rounded-lg p-3">
+                <div className="font-medium text-sm mb-2">Payment Methods</div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={form.payment_methods?.includes('Nagad')||false} onChange={()=>toggleArrayValue('payment_methods','Nagad')} /> Nagad
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={form.payment_methods?.includes('bKash')||false} onChange={()=>toggleArrayValue('payment_methods','bKash')} /> bKash
+                </label>
+              </div>
+              <div className="border rounded-lg p-3">
+                <div className="font-medium text-sm mb-2">Payment Modes</div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={form.payment_modes?.includes('Send Money')||false} onChange={()=>toggleArrayValue('payment_modes','Send Money')} /> Send Money
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={form.payment_modes?.includes('Cash Out')||false} onChange={()=>toggleArrayValue('payment_modes','Cash Out')} /> Cash Out
+                </label>
+              </div>
+            </div>
+
             <label className="inline-flex items-center gap-2 text-sm mt-2">
               <input type="checkbox" checked={!!form.is_active} onChange={e=>setForm({...form, is_active:e.target.checked})} /> Active
             </label>
@@ -431,6 +517,10 @@ function AdminPanel({ token }) {
                 <div className="flex-1">
                   <div className="font-medium line-clamp-1">{g.title}</div>
                   <div className="text-sm">৳ {g.price} • <span className={g.is_active? 'text-green-600':'text-red-600'}>{g.is_active? 'Active':'Inactive'}</span></div>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {(g.payment_methods||[]).map(m => <span key={m} className="text-[11px] px-2 py-0.5 rounded bg-gray-100 border">{m}</span>)}
+                    {(g.payment_modes||[]).map(m => <span key={m} className="text-[11px] px-2 py-0.5 rounded bg-gray-50 border border-dashed">{m}</span>)}
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button onClick={()=>editGame(g)} className="px-2 py-1 text-xs rounded bg-indigo-600 text-white">Edit</button>
                     <button onClick={()=>toggleActive(g.id)} className="px-2 py-1 text-xs rounded bg-gray-200">Toggle</button>
@@ -459,7 +549,7 @@ function AdminPanel({ token }) {
             <div key={o.id} className="bg-white rounded-xl border shadow p-3 flex items-center justify-between">
               <div>
                 <div className="font-medium">{o.delivery_email} • ৳{o.amount}</div>
-                <div className="text-sm text-gray-600">Txn: {o.transaction_id} • Status: {o.status} • Platform: {o.platform}</div>
+                <div className="text-sm text-gray-600">Txn: {o.transaction_id} • Status: {o.status} • Platform: {o.platform} • {o.payment_method}{o.payment_mode ? ` (${o.payment_mode})` : ''}</div>
               </div>
               <div className="flex gap-2">
                 {o.status !== 'completed' && (
@@ -510,7 +600,7 @@ export default function App() {
         <div className="py-10">
           <div className="max-w-5xl mx-auto text-center mb-8 px-4">
             <h1 className="text-4xl font-extrabold tracking-tight">সব গেম একসাথে — RS GAME GHOR</h1>
-            <p className="text-gray-600 mt-2">PC ও মোবাইল সব ধরনের গেম। পেমেন্ট শুধুমাত্র নগদ Send Money। Transaction ID দিন, ২ ঘন্টার মধ্যে ইমেইলে ডেলিভারি।</p>
+            <p className="text-gray-600 mt-2">PC ও মোবাইল সব ধরনের গেম। পেমেন্ট bKash/Nagad, Send Money বা Cash Out — Transaction ID দিন, ২ ঘন্টার মধ্যে ইমেইলে ডেলিভারি।</p>
           </div>
           <AuthPanel onLogin={login} />
         </div>
@@ -530,7 +620,7 @@ export default function App() {
         <div className="py-8">
           <div className="max-w-6xl mx-auto px-4 mb-4">
             <h2 className="text-2xl font-bold">Admin Panel</h2>
-            <p className="text-sm text-gray-600">গেম ম্যানেজ, ছবি আপলোড, অর্ডার ফিল্টার, ইউজার কন্ট্রোল—সব একসাথে।</p>
+            <p className="text-sm text-gray-600">গেম, ইমেজ, পেমেন্ট মেথড/মোড, অর্ডার ফিল্টার, ইউজার কন্ট্রোল—সব একসাথে।</p>
           </div>
           <AdminPanel token={token} />
         </div>
