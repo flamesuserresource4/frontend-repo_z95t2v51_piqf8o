@@ -53,27 +53,57 @@ function Header({ user, onLogout }) {
 }
 
 function AuthPanel({ onLogin }) {
-  const [mode, setMode] = useState('login')
+  const [mode, setMode] = useState('login') // login | register | forgot | reset
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [info, setInfo] = useState('')
+  const [devCode, setDevCode] = useState('')
 
   const submit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setInfo('')
+    setDevCode('')
     try {
-      const url = mode === 'login' ? '/auth/login' : '/auth/register'
-      const res = await fetch(API_BASE + url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mode === 'login' ? { email, password } : { name, email, password })
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.detail || 'Failed')
-      onLogin(data)
+      if (mode === 'login' || mode === 'register') {
+        const url = mode === 'login' ? '/auth/login' : '/auth/register'
+        const body = mode === 'login' ? { email, password } : { name, email, password }
+        const res = await fetch(API_BASE + url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.detail || 'Failed')
+        onLogin(data)
+      } else if (mode === 'forgot') {
+        const res = await fetch(API_BASE + '/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.detail || 'Failed')
+        setInfo('একটা কোড ইমেইলে পাঠানো হয়েছে। ১৫ মিনিটের মধ্যে ব্যবহার করুন।')
+        if (data.debug_code) setDevCode(String(data.debug_code))
+        setMode('reset')
+      } else if (mode === 'reset') {
+        if (password.length < 6) throw new Error('Password must be at least 6 characters')
+        const res = await fetch(API_BASE + '/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code, new_password: password })
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.detail || 'Failed')
+        setInfo('পাসওয়ার্ড রিসেট হয়েছে। এখন লগইন করুন।')
+        setMode('login')
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -90,7 +120,12 @@ function AuthPanel({ onLogin }) {
             <div className="space-y-4">
               <BrandLogo />
               <div className="space-y-2">
-                <h2 className="text-2xl md:text-3xl font-extrabold">{mode === 'login' ? 'Welcome back!' : 'Create your account'}</h2>
+                <h2 className="text-2xl md:text-3xl font-extrabold">
+                  {mode === 'login' && 'Welcome back!'}
+                  {mode === 'register' && 'Create your account'}
+                  {mode === 'forgot' && 'Forgot password?'}
+                  {mode === 'reset' && 'Reset password'}
+                </h2>
                 <p className="text-sm text-gray-600">গেম কিনুন নগদ Send Money দিয়ে। অর্ডার করলে ২ ঘন্টার মধ্যে ইমেইলে পাবেন।</p>
               </div>
               <ul className="text-sm text-gray-700 space-y-2">
@@ -98,6 +133,11 @@ function AuthPanel({ onLogin }) {
                 <li>• Transaction ID আবশ্যক</li>
                 <li>• Delivery Email অবশ্যই ঠিক দিন</li>
               </ul>
+              {devCode && (
+                <div className="text-xs text-fuchsia-700 bg-fuchsia-50 border border-fuchsia-200 rounded p-2">
+                  Dev: Reset code {devCode}
+                </div>
+              )}
             </div>
             <form onSubmit={submit} className="space-y-4">
               {mode === 'register' && (
@@ -106,21 +146,61 @@ function AuthPanel({ onLogin }) {
                   <input value={name} onChange={e=>setName(e.target.value)} placeholder="Your name" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
                 </div>
               )}
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Password</label>
-                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
-              </div>
+              {(mode === 'login' || mode === 'register' || mode === 'forgot' || mode === 'reset') && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
+                </div>
+              )}
+              {(mode === 'login' || mode === 'register') && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Password</label>
+                  <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
+                </div>
+              )}
+              {mode === 'reset' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Reset code</label>
+                    <input value={code} onChange={e=>setCode(e.target.value)} placeholder="6-digit code" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">New password</label>
+                    <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 6 characters" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
+                  </div>
+                </>
+              )}
+              {mode === 'forgot' && (
+                <div className="text-sm text-gray-600">আপনার ইমেইল দিন। আমরা একটি ৬-সংখ্যার কোড পাঠাব।</div>
+              )}
+
               {error && <div className="text-red-600 text-sm">{error}</div>}
+              {info && <div className="text-green-700 text-sm">{info}</div>}
+
               <button disabled={loading} className="w-full rounded-lg py-2.5 text-white font-medium bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 hover:from-rose-600 hover:via-fuchsia-600 hover:to-indigo-600 shadow">
-                {loading ? 'Please wait…' : (mode === 'login' ? 'Login' : 'Register')}
+                {loading ? 'Please wait…' : (
+                  mode === 'login' ? 'Login' :
+                  mode === 'register' ? 'Register' :
+                  mode === 'forgot' ? 'Send reset code' :
+                  'Reset password'
+                )}
               </button>
-              <button type="button" onClick={() => setMode(mode === 'login' ? 'register' : 'login')} className="w-full text-center text-sm text-fuchsia-600 hover:underline">
-                {mode === 'login' ? 'Create a new account' : 'Already have an account? Login'}
-              </button>
+
+              {mode !== 'login' && (
+                <button type="button" onClick={() => setMode('login')} className="w-full text-center text-sm text-fuchsia-600 hover:underline">
+                  Back to login
+                </button>
+              )}
+              {mode === 'login' && (
+                <div className="flex flex-col gap-1">
+                  <button type="button" onClick={() => setMode('register')} className="w-full text-center text-sm text-fuchsia-600 hover:underline">
+                    Create a new account
+                  </button>
+                  <button type="button" onClick={() => setMode('forgot')} className="w-full text-center text-sm text-fuchsia-600 hover:underline">
+                    Forgot password?
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>
