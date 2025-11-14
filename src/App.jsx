@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || ''
 
@@ -53,57 +53,28 @@ function Header({ user, onLogout }) {
 }
 
 function AuthPanel({ onLogin }) {
-  const [mode, setMode] = useState('login') // login | register | forgot | reset
+  const [mode, setMode] = useState('login') // login | register
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [info, setInfo] = useState('')
-  const [devCode, setDevCode] = useState('')
 
   const submit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    setInfo('')
-    setDevCode('')
     try {
-      if (mode === 'login' || mode === 'register') {
-        const url = mode === 'login' ? '/auth/login' : '/auth/register'
-        const body = mode === 'login' ? { email, password } : { name, email, password }
-        const res = await fetch(API_BASE + url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.detail || 'Failed')
-        onLogin(data)
-      } else if (mode === 'forgot') {
-        const res = await fetch(API_BASE + '/auth/forgot-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.detail || 'Failed')
-        setInfo('একটা কোড ইমেইলে পাঠানো হয়েছে। ১৫ মিনিটের মধ্যে ব্যবহার করুন।')
-        if (data.debug_code) setDevCode(String(data.debug_code))
-        setMode('reset')
-      } else if (mode === 'reset') {
-        if (password.length < 6) throw new Error('Password must be at least 6 characters')
-        const res = await fetch(API_BASE + '/auth/reset-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, code, new_password: password })
-        })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.detail || 'Failed')
-        setInfo('পাসওয়ার্ড রিসেট হয়েছে। এখন লগইন করুন।')
-        setMode('login')
-      }
+      const url = mode === 'login' ? '/auth/login' : '/auth/register'
+      const body = mode === 'login' ? { email, password } : { name, email, password }
+      const res = await fetch(API_BASE + url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || 'Failed')
+      onLogin(data)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -123,8 +94,6 @@ function AuthPanel({ onLogin }) {
                 <h2 className="text-2xl md:text-3xl font-extrabold">
                   {mode === 'login' && 'Welcome back!'}
                   {mode === 'register' && 'Create your account'}
-                  {mode === 'forgot' && 'Forgot password?'}
-                  {mode === 'reset' && 'Reset password'}
                 </h2>
                 <p className="text-sm text-gray-600">গেম কিনুন নগদ Send Money দিয়ে। অর্ডার করলে ২ ঘন্টার মধ্যে ইমেইলে পাবেন।</p>
               </div>
@@ -133,11 +102,6 @@ function AuthPanel({ onLogin }) {
                 <li>• Transaction ID আবশ্যক</li>
                 <li>• Delivery Email অবশ্যই ঠিক দিন</li>
               </ul>
-              {devCode && (
-                <div className="text-xs text-fuchsia-700 bg-fuchsia-50 border border-fuchsia-200 rounded p-2">
-                  Dev: Reset code {devCode}
-                </div>
-              )}
             </div>
             <form onSubmit={submit} className="space-y-4">
               {mode === 'register' && (
@@ -146,43 +110,20 @@ function AuthPanel({ onLogin }) {
                   <input value={name} onChange={e=>setName(e.target.value)} placeholder="Your name" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
                 </div>
               )}
-              {(mode === 'login' || mode === 'register' || mode === 'forgot' || mode === 'reset') && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Email</label>
-                  <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
-                </div>
-              )}
-              {(mode === 'login' || mode === 'register') && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Password</label>
-                  <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
-                </div>
-              )}
-              {mode === 'reset' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Reset code</label>
-                    <input value={code} onChange={e=>setCode(e.target.value)} placeholder="6-digit code" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">New password</label>
-                    <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="At least 6 characters" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
-                  </div>
-                </>
-              )}
-              {mode === 'forgot' && (
-                <div className="text-sm text-gray-600">আপনার ইমেইল দিন। আমরা একটি ৬-সংখ্যার কোড পাঠাব।</div>
-              )}
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Password</label>
+                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
+              </div>
 
               {error && <div className="text-red-600 text-sm">{error}</div>}
-              {info && <div className="text-green-700 text-sm">{info}</div>}
 
               <button disabled={loading} className="w-full rounded-lg py-2.5 text-white font-medium bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 hover:from-rose-600 hover:via-fuchsia-600 hover:to-indigo-600 shadow">
                 {loading ? 'Please wait…' : (
-                  mode === 'login' ? 'Login' :
-                  mode === 'register' ? 'Register' :
-                  mode === 'forgot' ? 'Send reset code' :
-                  'Reset password'
+                  mode === 'login' ? 'Login' : 'Register'
                 )}
               </button>
 
@@ -195,9 +136,6 @@ function AuthPanel({ onLogin }) {
                 <div className="flex flex-col gap-1">
                   <button type="button" onClick={() => setMode('register')} className="w-full text-center text-sm text-fuchsia-600 hover:underline">
                     Create a new account
-                  </button>
-                  <button type="button" onClick={() => setMode('forgot')} className="w-full text-center text-sm text-fuchsia-600 hover:underline">
-                    Forgot password?
                   </button>
                 </div>
               )}
@@ -326,45 +264,126 @@ function Checkout({ game, token, onBack }) {
 function AdminPanel({ token }) {
   const [tab, setTab] = useState('games')
   const [games, setGames] = useState([])
-  const [form, setForm] = useState({ title: '', description: '', platforms: 'PC,Android', categories: 'Action', price: 0, image_url: '' })
+  const [editingId, setEditingId] = useState('')
+  const [form, setForm] = useState({ title: '', description: '', platforms: 'PC,Android', categories: 'Action', price: 0, image_url: '', is_active: true })
   const [message, setMessage] = useState('')
-  const authHeader = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+  const [imgUploading, setImgUploading] = useState(false)
+
+  const authJson = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+  const authOnly = { 'Authorization': `Bearer ${token}` }
 
   const loadGames = async () => {
-    const res = await fetch(API_BASE + '/games')
+    // Admin list to include inactive too
+    const res = await fetch(API_BASE + '/admin/games', { headers: authOnly })
     const data = await res.json()
     setGames(data)
   }
   useEffect(() => { loadGames() }, [])
 
-  const createGame = async (e) => {
+  const handleUpload = async (file) => {
+    if (!file) return
+    setImgUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch(API_BASE + '/admin/upload-image', { method: 'POST', headers: authOnly, body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || 'Upload failed')
+      setForm(prev => ({ ...prev, image_url: data.url }))
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setImgUploading(false)
+    }
+  }
+
+  const resetForm = () => {
+    setEditingId('')
+    setForm({ title: '', description: '', platforms: 'PC,Android', categories: 'Action', price: 0, image_url: '', is_active: true })
+  }
+
+  const submitGame = async (e) => {
     e.preventDefault()
     setMessage('')
     const payload = {
-      ...form,
+      title: form.title,
+      description: form.description,
       platforms: form.platforms.split(',').map(s=>s.trim()).filter(Boolean),
       categories: form.categories.split(',').map(s=>s.trim()).filter(Boolean),
-      price: parseFloat(form.price)
+      price: parseFloat(form.price),
+      image_url: form.image_url,
+      is_active: !!form.is_active,
     }
-    const res = await fetch(API_BASE + '/admin/games', { method: 'POST', headers: authHeader, body: JSON.stringify(payload) })
+    const url = editingId ? `/admin/games/${editingId}` : '/admin/games'
+    const method = editingId ? 'PUT' : 'POST'
+    const res = await fetch(API_BASE + url, { method, headers: authJson, body: JSON.stringify(payload) })
     const data = await res.json()
     if (!res.ok) { setMessage(data.detail || 'Failed'); return }
-    setMessage('Game added')
-    setForm({ title: '', description: '', platforms: 'PC,Android', categories: 'Action', price: 0, image_url: '' })
+    setMessage(editingId ? 'Game updated' : 'Game added')
+    resetForm()
     loadGames()
   }
 
+  const editGame = (g) => {
+    setEditingId(g.id)
+    setForm({
+      title: g.title || '',
+      description: g.description || '',
+      platforms: (g.platforms || []).join(','),
+      categories: (g.categories || []).join(','),
+      price: g.price || 0,
+      image_url: g.image_url || '',
+      is_active: g.is_active,
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const deleteGame = async (id) => {
+    if (!confirm('Delete this game?')) return
+    const res = await fetch(API_BASE + `/admin/games/${id}`, { method: 'DELETE', headers: authOnly })
+    if (res.ok) {
+      setMessage('Game deleted')
+      loadGames()
+      if (editingId === id) resetForm()
+    }
+  }
+
+  const toggleActive = async (id) => {
+    const res = await fetch(API_BASE + `/admin/games/${id}/toggle`, { method: 'PATCH', headers: authOnly })
+    if (res.ok) loadGames()
+  }
+
+  // Orders
   const [orders, setOrders] = useState([])
+  const [orderStatus, setOrderStatus] = useState('')
+  const [orderQ, setOrderQ] = useState('')
   const loadOrders = async () => {
-    const res = await fetch(API_BASE + '/admin/orders', { headers: { 'Authorization': `Bearer ${token}` } })
+    const params = new URLSearchParams()
+    if (orderStatus) params.set('status', orderStatus)
+    if (orderQ) params.set('q', orderQ)
+    const res = await fetch(API_BASE + '/admin/orders' + (params.toString() ? `?${params.toString()}` : ''), { headers: authOnly })
     const data = await res.json()
     setOrders(data)
   }
   useEffect(() => { if (tab==='orders') loadOrders() }, [tab])
 
-  const markCompleted = async (id) => {
-    const res = await fetch(API_BASE + `/admin/orders/${id}`, { method: 'PATCH', headers: authHeader, body: JSON.stringify({ status: 'completed' }) })
+  const markStatus = async (id, status) => {
+    const res = await fetch(API_BASE + `/admin/orders/${id}`, { method: 'PATCH', headers: authJson, body: JSON.stringify({ status }) })
     if (res.ok) loadOrders()
+  }
+
+  // Users
+  const [users, setUsers] = useState([])
+  const loadUsers = async () => {
+    const res = await fetch(API_BASE + '/admin/users', { headers: authOnly })
+    const data = await res.json()
+    setUsers(data)
+  }
+  useEffect(() => { if (tab==='users') loadUsers() }, [tab])
+
+  const updateUser = async (id, updates) => {
+    const res = await fetch(API_BASE + `/admin/users/${id}`, { method: 'PATCH', headers: authJson, body: JSON.stringify(updates) })
+    if (res.ok) loadUsers()
   }
 
   return (
@@ -372,41 +391,104 @@ function AdminPanel({ token }) {
       <div className="flex gap-3 mb-4">
         <button className={`px-3 py-1.5 rounded-lg ${tab==='games'?'bg-gray-900 text-white':'bg-gray-200'}`} onClick={()=>setTab('games')}>Games</button>
         <button className={`px-3 py-1.5 rounded-lg ${tab==='orders'?'bg-gray-900 text-white':'bg-gray-200'}`} onClick={()=>setTab('orders')}>Orders</button>
+        <button className={`px-3 py-1.5 rounded-lg ${tab==='users'?'bg-gray-900 text-white':'bg-gray-200'}`} onClick={()=>setTab('users')}>Users</button>
       </div>
+
       {tab === 'games' && (
         <div className="grid md:grid-cols-2 gap-6">
-          <form onSubmit={createGame} className="bg-white rounded-xl border shadow p-4 space-y-2">
-            <h3 className="font-semibold mb-2">Add New Game</h3>
+          <form onSubmit={submitGame} className="bg-white rounded-xl border shadow p-4 space-y-2">
+            <h3 className="font-semibold mb-2">{editingId ? 'Edit Game' : 'Add New Game'}</h3>
             <input value={form.title} onChange={e=>setForm({...form, title:e.target.value})} placeholder="Title" className="w-full border rounded-lg px-3 py-2.5" required />
             <textarea value={form.description} onChange={e=>setForm({...form, description:e.target.value})} placeholder="Description" className="w-full border rounded-lg px-3 py-2.5" />
             <input value={form.platforms} onChange={e=>setForm({...form, platforms:e.target.value})} placeholder="Platforms (comma separated)" className="w-full border rounded-lg px-3 py-2.5" />
             <input value={form.categories} onChange={e=>setForm({...form, categories:e.target.value})} placeholder="Categories (comma separated)" className="w-full border rounded-lg px-3 py-2.5" />
             <input type="number" value={form.price} onChange={e=>setForm({...form, price:e.target.value})} placeholder="Price" className="w-full border rounded-lg px-3 py-2.5" required />
-            <input value={form.image_url} onChange={e=>setForm({...form, image_url:e.target.value})} placeholder="Image URL" className="w-full border rounded-lg px-3 py-2.5" />
+
+            <div className="flex items-center gap-3">
+              <input value={form.image_url} onChange={e=>setForm({...form, image_url:e.target.value})} placeholder="Image URL" className="flex-1 border rounded-lg px-3 py-2.5" />
+              <label className="inline-flex items-center gap-2 text-sm">
+                <span className="px-3 py-2 border rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">{imgUploading ? 'Uploading…' : 'Upload'}</span>
+                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e)=>handleUpload(e.target.files?.[0])} />
+              </label>
+            </div>
+            {form.image_url && <img src={form.image_url} alt="preview" className="h-28 w-full object-cover rounded-lg border" />}
+
+            <label className="inline-flex items-center gap-2 text-sm mt-2">
+              <input type="checkbox" checked={!!form.is_active} onChange={e=>setForm({...form, is_active:e.target.checked})} /> Active
+            </label>
+
             {message && <div className="text-sm">{message}</div>}
-            <button className="w-full bg-gray-900 hover:bg-gray-700 text-white rounded-lg px-4 py-2.5">Save</button>
+            <div className="flex gap-2">
+              <button className="flex-1 bg-gray-900 hover:bg-gray-700 text-white rounded-lg px-4 py-2.5">{editingId ? 'Update' : 'Save'}</button>
+              {editingId && <button type="button" onClick={resetForm} className="px-4 py-2.5 rounded-lg border">Cancel</button>}
+            </div>
           </form>
+
           <div className="grid sm:grid-cols-2 gap-3">
             {games.map(g => (
-              <div key={g.id} className="border rounded-xl p-3">
-                <div className="font-medium line-clamp-1">{g.title}</div>
-                <div className="text-sm">৳ {g.price}</div>
+              <div key={g.id} className="border rounded-xl p-3 flex gap-3">
+                {g.image_url && <img src={g.image_url} alt={g.title} className="h-16 w-16 object-cover rounded" />}
+                <div className="flex-1">
+                  <div className="font-medium line-clamp-1">{g.title}</div>
+                  <div className="text-sm">৳ {g.price} • <span className={g.is_active? 'text-green-600':'text-red-600'}>{g.is_active? 'Active':'Inactive'}</span></div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button onClick={()=>editGame(g)} className="px-2 py-1 text-xs rounded bg-indigo-600 text-white">Edit</button>
+                    <button onClick={()=>toggleActive(g.id)} className="px-2 py-1 text-xs rounded bg-gray-200">Toggle</button>
+                    <button onClick={()=>deleteGame(g.id)} className="px-2 py-1 text-xs rounded bg-red-600 text-white">Delete</button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
+
       {tab === 'orders' && (
         <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <select value={orderStatus} onChange={e=>setOrderStatus(e.target.value)} className="border rounded px-3 py-2">
+              <option value="">All</option>
+              <option>pending</option>
+              <option>completed</option>
+              <option>cancelled</option>
+            </select>
+            <input value={orderQ} onChange={e=>setOrderQ(e.target.value)} placeholder="Search email/txn" className="border rounded px-3 py-2 flex-1" />
+            <button onClick={loadOrders} className="px-3 py-2 rounded bg-gray-900 text-white">Filter</button>
+          </div>
           {orders.map(o => (
             <div key={o.id} className="bg-white rounded-xl border shadow p-3 flex items-center justify-between">
               <div>
                 <div className="font-medium">{o.delivery_email} • ৳{o.amount}</div>
-                <div className="text-sm text-gray-600">Txn: {o.transaction_id} • Status: {o.status}</div>
+                <div className="text-sm text-gray-600">Txn: {o.transaction_id} • Status: {o.status} • Platform: {o.platform}</div>
               </div>
-              {o.status !== 'completed' && (
-                <button onClick={()=>markCompleted(o.id)} className="px-3 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-700 text-white">Mark Completed</button>
-              )}
+              <div className="flex gap-2">
+                {o.status !== 'completed' && (
+                  <button onClick={()=>markStatus(o.id, 'completed')} className="px-3 py-1.5 rounded-lg bg-green-600 text-white">Mark Completed</button>
+                )}
+                {o.status !== 'cancelled' && (
+                  <button onClick={()=>markStatus(o.id, 'cancelled')} className="px-3 py-1.5 rounded-lg bg-red-600 text-white">Cancel</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'users' && (
+        <div className="space-y-3">
+          {users.map(u => (
+            <div key={u.id} className="bg-white rounded-xl border shadow p-3 flex items-center justify-between">
+              <div>
+                <div className="font-medium">{u.name} <span className="text-xs text-gray-500">({u.email})</span></div>
+                <div className="text-sm text-gray-600">Role: {u.role} • Active: {u.is_active ? 'Yes' : 'No'}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <select value={u.role} onChange={(e)=>updateUser(u.id, { role: e.target.value })} className="border rounded px-2 py-1 text-sm">
+                  <option value="user">user</option>
+                  <option value="admin">admin</option>
+                </select>
+                <button onClick={()=>updateUser(u.id, { is_active: !u.is_active })} className="px-3 py-1.5 rounded bg-gray-200 text-sm">{u.is_active ? 'Disable' : 'Enable'}</button>
+              </div>
             </div>
           ))}
         </div>
@@ -448,7 +530,7 @@ export default function App() {
         <div className="py-8">
           <div className="max-w-6xl mx-auto px-4 mb-4">
             <h2 className="text-2xl font-bold">Admin Panel</h2>
-            <p className="text-sm text-gray-600">গেম, দাম, ছবি ম্যানেজ করুন; অর্ডার কমপ্লিট করুন।</p>
+            <p className="text-sm text-gray-600">গেম ম্যানেজ, ছবি আপলোড, অর্ডার ফিল্টার, ইউজার কন্ট্রোল—সব একসাথে।</p>
           </div>
           <AdminPanel token={token} />
         </div>
