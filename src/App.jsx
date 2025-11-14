@@ -23,16 +23,27 @@ function useAuth() {
   return { token, user, login, logout }
 }
 
+function BrandLogo() {
+  return (
+    <div className="flex items-center gap-2 select-none">
+      <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-rose-500 via-fuchsia-500 to-indigo-500 shadow-lg shadow-fuchsia-300/40 grid place-items-center text-white font-black">RS</div>
+      <div className="font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600">
+        RS GAME GHOR
+      </div>
+    </div>
+  )
+}
+
 function Header({ user, onLogout }) {
   return (
     <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="text-xl font-extrabold tracking-tight">GameHub</div>
+        <BrandLogo />
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              <span className="text-sm text-gray-600">{user.name} ({user.role})</span>
-              <button onClick={onLogout} className="px-3 py-1.5 rounded bg-gray-200 hover:bg-gray-300 text-sm">Logout</button>
+              <span className="text-sm text-gray-600 hidden sm:block">{user.name} ({user.role})</span>
+              <button onClick={onLogout} className="px-3 py-1.5 rounded bg-gray-900 text-white hover:bg-gray-700 text-sm">Logout</button>
             </>
           ) : null}
         </div>
@@ -71,37 +82,62 @@ function AuthPanel({ onLogin }) {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white shadow rounded p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">{mode === 'login' ? 'Login' : 'Register'}</h2>
-        <button onClick={() => setMode(mode === 'login' ? 'register' : 'login')} className="text-sm text-blue-600 hover:underline">
-          {mode === 'login' ? 'Create account' : 'Already have an account?'}
-        </button>
+    <div className="relative">
+      <div className="absolute inset-0 blur-3xl opacity-70 bg-[radial-gradient(circle_at_20%_0%,rgba(244,63,94,0.35),transparent_40%),radial-gradient(circle_at_100%_40%,rgba(217,70,239,0.25),transparent_35%),radial-gradient(circle_at_0%_100%,rgba(99,102,241,0.25),transparent_40%)]" />
+      <div className="relative max-w-3xl mx-auto">
+        <div className="rounded-2xl p-1 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 shadow-xl">
+          <div className="rounded-2xl bg-white/90 backdrop-blur p-8 md:p-10 grid md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <BrandLogo />
+              <div className="space-y-2">
+                <h2 className="text-2xl md:text-3xl font-extrabold">{mode === 'login' ? 'Welcome back!' : 'Create your account'}</h2>
+                <p className="text-sm text-gray-600">গেম কিনুন নগদ Send Money দিয়ে। অর্ডার করলে ২ ঘন্টার মধ্যে ইমেইলে পাবেন।</p>
+              </div>
+              <ul className="text-sm text-gray-700 space-y-2">
+                <li>• শুধুমাত্র Nagad Send Money</li>
+                <li>• Transaction ID আবশ্যক</li>
+                <li>• Delivery Email অবশ্যই ঠিক দিন</li>
+              </ul>
+            </div>
+            <form onSubmit={submit} className="space-y-4">
+              {mode === 'register' && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Full name</label>
+                  <input value={name} onChange={e=>setName(e.target.value)} placeholder="Your name" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Password</label>
+                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" className="w-full border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-500" required />
+              </div>
+              {error && <div className="text-red-600 text-sm">{error}</div>}
+              <button disabled={loading} className="w-full rounded-lg py-2.5 text-white font-medium bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500 hover:from-rose-600 hover:via-fuchsia-600 hover:to-indigo-600 shadow">
+                {loading ? 'Please wait…' : (mode === 'login' ? 'Login' : 'Register')}
+              </button>
+              <button type="button" onClick={() => setMode(mode === 'login' ? 'register' : 'login')} className="w-full text-center text-sm text-fuchsia-600 hover:underline">
+                {mode === 'login' ? 'Create a new account' : 'Already have an account? Login'}
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
-      <form onSubmit={submit} className="space-y-3">
-        {mode === 'register' && (
-          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full name" className="w-full border rounded px-3 py-2" required />
-        )}
-        <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" className="w-full border rounded px-3 py-2" required />
-        <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" className="w-full border rounded px-3 py-2" required />
-        {error && <div className="text-red-600 text-sm">{error}</div>}
-        <button disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded px-4 py-2">
-          {loading ? 'Please wait...' : (mode === 'login' ? 'Login' : 'Register')}
-        </button>
-      </form>
     </div>
   )
 }
 
 function GameCard({ game, onSelect }) {
   return (
-    <div className="bg-white rounded shadow hover:shadow-md transition p-3 flex flex-col">
-      {game.image_url && <img src={game.image_url} alt={game.title} className="h-40 w-full object-cover rounded" />}
-      <div className="mt-2 font-semibold">{game.title}</div>
+    <div className="bg-white rounded-xl border shadow-sm hover:shadow-md transition p-3 flex flex-col">
+      {game.image_url && <img src={game.image_url} alt={game.title} className="h-44 w-full object-cover rounded-lg" />}
+      <div className="mt-3 font-semibold line-clamp-1">{game.title}</div>
       <div className="text-sm text-gray-600 line-clamp-2">{game.description}</div>
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mt-3 flex items-center justify-between">
         <span className="font-bold">৳ {game.price}</span>
-        <button onClick={() => onSelect(game)} className="px-3 py-1.5 text-sm bg-green-600 text-white rounded">Buy</button>
+        <button onClick={() => onSelect(game)} className="px-3 py-1.5 text-sm bg-gray-900 hover:bg-gray-700 text-white rounded-lg">Buy</button>
       </div>
     </div>
   )
@@ -125,8 +161,8 @@ function GameList({ onSelect }) {
   return (
     <div className="max-w-6xl mx-auto px-4">
       <div className="flex items-center gap-3 mb-4">
-        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search games" className="flex-1 border rounded px-3 py-2" />
-        <select value={platform} onChange={e=>setPlatform(e.target.value)} className="border rounded px-3 py-2">
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search games" className="flex-1 border rounded-lg px-3 py-2.5" />
+        <select value={platform} onChange={e=>setPlatform(e.target.value)} className="border rounded-lg px-3 py-2.5">
           <option value="">All Platforms</option>
           <option>PC</option>
           <option>Android</option>
@@ -177,29 +213,29 @@ function Checkout({ game, token, onBack }) {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded shadow p-6">
-      <button onClick={onBack} className="text-sm text-blue-600 hover:underline">← Back</button>
+    <div className="max-w-md mx-auto bg-white rounded-xl border shadow p-6">
+      <button onClick={onBack} className="text-sm text-fuchsia-600 hover:underline">← Back</button>
       <h3 className="text-xl font-semibold mt-2 mb-4">Checkout - {game.title}</h3>
       <form onSubmit={placeOrder} className="space-y-3">
         <div>
           <label className="block text-sm mb-1">Platform</label>
-          <select value={platform} onChange={e=>setPlatform(e.target.value)} className="w-full border rounded px-3 py-2" required>
+          <select value={platform} onChange={e=>setPlatform(e.target.value)} className="w-full border rounded-lg px-3 py-2.5" required>
             {game.platforms?.map(p => <option key={p}>{p}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-sm mb-1">Delivery Email</label>
-          <input type="email" value={deliveryEmail} onChange={e=>setDeliveryEmail(e.target.value)} className="w-full border rounded px-3 py-2" required />
+          <input type="email" value={deliveryEmail} onChange={e=>setDeliveryEmail(e.target.value)} className="w-full border rounded-lg px-3 py-2.5" required />
         </div>
         <div>
           <label className="block text-sm mb-1">Nagad Transaction ID</label>
-          <input value={trx} onChange={e=>setTrx(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Txn ID" required />
+          <input value={trx} onChange={e=>setTrx(e.target.value)} className="w-full border rounded-lg px-3 py-2.5" placeholder="Txn ID" required />
         </div>
-        <div className="text-sm text-gray-600 bg-gray-50 border rounded p-3">
-          পেমেন্ট পদ্ধতি: নগদ Send Money. Txn ID দিয়ে অর্ডার কনফার্ম করুন। ২ ঘন্টার মধ্যে ইমেইলে গেম/কোড পাবেন।
+        <div className="text-sm text-gray-700 bg-gray-50 border rounded-lg p-3">
+          পেমেন্ট: নগদ Send Money. Txn ID দিন। ২ ঘন্টার মধ্যে ইমেইলে গেম/কোড পাবেন।
         </div>
-        <button disabled={loading} className="w-full bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2">
-          {loading ? 'Placing...' : `Pay ৳${game.price} & Place Order`}
+        <button disabled={loading} className="w-full bg-gray-900 hover:bg-gray-700 text-white rounded-lg px-4 py-2.5">
+          {loading ? 'Placing…' : `Pay ৳${game.price} & Place Order`}
         </button>
         {msg && <div className="text-center text-sm mt-2">{msg}</div>}
       </form>
@@ -254,26 +290,26 @@ function AdminPanel({ token }) {
   return (
     <div className="max-w-6xl mx-auto px-4">
       <div className="flex gap-3 mb-4">
-        <button className={`px-3 py-1.5 rounded ${tab==='games'?'bg-blue-600 text-white':'bg-gray-200'}`} onClick={()=>setTab('games')}>Games</button>
-        <button className={`px-3 py-1.5 rounded ${tab==='orders'?'bg-blue-600 text-white':'bg-gray-200'}`} onClick={()=>setTab('orders')}>Orders</button>
+        <button className={`px-3 py-1.5 rounded-lg ${tab==='games'?'bg-gray-900 text-white':'bg-gray-200'}`} onClick={()=>setTab('games')}>Games</button>
+        <button className={`px-3 py-1.5 rounded-lg ${tab==='orders'?'bg-gray-900 text-white':'bg-gray-200'}`} onClick={()=>setTab('orders')}>Orders</button>
       </div>
       {tab === 'games' && (
         <div className="grid md:grid-cols-2 gap-6">
-          <form onSubmit={createGame} className="bg-white rounded shadow p-4 space-y-2">
+          <form onSubmit={createGame} className="bg-white rounded-xl border shadow p-4 space-y-2">
             <h3 className="font-semibold mb-2">Add New Game</h3>
-            <input value={form.title} onChange={e=>setForm({...form, title:e.target.value})} placeholder="Title" className="w-full border rounded px-3 py-2" required />
-            <textarea value={form.description} onChange={e=>setForm({...form, description:e.target.value})} placeholder="Description" className="w-full border rounded px-3 py-2" />
-            <input value={form.platforms} onChange={e=>setForm({...form, platforms:e.target.value})} placeholder="Platforms (comma separated)" className="w-full border rounded px-3 py-2" />
-            <input value={form.categories} onChange={e=>setForm({...form, categories:e.target.value})} placeholder="Categories (comma separated)" className="w-full border rounded px-3 py-2" />
-            <input type="number" value={form.price} onChange={e=>setForm({...form, price:e.target.value})} placeholder="Price" className="w-full border rounded px-3 py-2" required />
-            <input value={form.image_url} onChange={e=>setForm({...form, image_url:e.target.value})} placeholder="Image URL" className="w-full border rounded px-3 py-2" />
+            <input value={form.title} onChange={e=>setForm({...form, title:e.target.value})} placeholder="Title" className="w-full border rounded-lg px-3 py-2.5" required />
+            <textarea value={form.description} onChange={e=>setForm({...form, description:e.target.value})} placeholder="Description" className="w-full border rounded-lg px-3 py-2.5" />
+            <input value={form.platforms} onChange={e=>setForm({...form, platforms:e.target.value})} placeholder="Platforms (comma separated)" className="w-full border rounded-lg px-3 py-2.5" />
+            <input value={form.categories} onChange={e=>setForm({...form, categories:e.target.value})} placeholder="Categories (comma separated)" className="w-full border rounded-lg px-3 py-2.5" />
+            <input type="number" value={form.price} onChange={e=>setForm({...form, price:e.target.value})} placeholder="Price" className="w-full border rounded-lg px-3 py-2.5" required />
+            <input value={form.image_url} onChange={e=>setForm({...form, image_url:e.target.value})} placeholder="Image URL" className="w-full border rounded-lg px-3 py-2.5" />
             {message && <div className="text-sm">{message}</div>}
-            <button className="w-full bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2">Save</button>
+            <button className="w-full bg-gray-900 hover:bg-gray-700 text-white rounded-lg px-4 py-2.5">Save</button>
           </form>
           <div className="grid sm:grid-cols-2 gap-3">
             {games.map(g => (
-              <div key={g.id} className="border rounded p-2">
-                <div className="font-medium">{g.title}</div>
+              <div key={g.id} className="border rounded-xl p-3">
+                <div className="font-medium line-clamp-1">{g.title}</div>
                 <div className="text-sm">৳ {g.price}</div>
               </div>
             ))}
@@ -283,13 +319,13 @@ function AdminPanel({ token }) {
       {tab === 'orders' && (
         <div className="space-y-3">
           {orders.map(o => (
-            <div key={o.id} className="bg-white rounded shadow p-3 flex items-center justify-between">
+            <div key={o.id} className="bg-white rounded-xl border shadow p-3 flex items-center justify-between">
               <div>
                 <div className="font-medium">{o.delivery_email} • ৳{o.amount}</div>
                 <div className="text-sm text-gray-600">Txn: {o.transaction_id} • Status: {o.status}</div>
               </div>
               {o.status !== 'completed' && (
-                <button onClick={()=>markCompleted(o.id)} className="px-3 py-1.5 rounded bg-blue-600 text-white">Mark Completed</button>
+                <button onClick={()=>markCompleted(o.id)} className="px-3 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-700 text-white">Mark Completed</button>
               )}
             </div>
           ))}
@@ -305,14 +341,14 @@ export default function App() {
   const isAdmin = user?.role === 'admin'
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <Header user={user} onLogout={logout} />
 
       {!user && (
         <div className="py-10">
-          <div className="max-w-3xl mx-auto text-center mb-6">
-            <h1 className="text-3xl font-extrabold">গেম স্টোর</h1>
-            <p className="text-gray-600">PC ও মোবাইল সব ধরনের গেম। পেমেন্ট শুধুমাত্র নগদ Send Money।</p>
+          <div className="max-w-5xl mx-auto text-center mb-8 px-4">
+            <h1 className="text-4xl font-extrabold tracking-tight">সব গেম একসাথে — RS GAME GHOR</h1>
+            <p className="text-gray-600 mt-2">PC ও মোবাইল সব ধরনের গেম। পেমেন্ট শুধুমাত্র নগদ Send Money। Transaction ID দিন, ২ ঘন্টার মধ্যে ইমেইলে ডেলিভারি।</p>
           </div>
           <AuthPanel onLogin={login} />
         </div>
@@ -330,6 +366,10 @@ export default function App() {
 
       {user && isAdmin && (
         <div className="py-8">
+          <div className="max-w-6xl mx-auto px-4 mb-4">
+            <h2 className="text-2xl font-bold">Admin Panel</h2>
+            <p className="text-sm text-gray-600">গেম, দাম, ছবি ম্যানেজ করুন; অর্ডার কমপ্লিট করুন।</p>
+          </div>
           <AdminPanel token={token} />
         </div>
       )}
